@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda Eletrônica Completa</title>
+  <style>
+    :root {
+      --bg-dark: #121214;
+      --card-bg: #202024;
+      --text-main: #ffffff;
+      --text-muted: #a8a8b3;
+      --border-radius: 12px;
+      --alert-color: #f75a68;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 1150px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    /* Cabeçalho e Filtros */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: var(--border-radius);
+    }
+    h1 {
+      font-size: 1.5rem;
+    }
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .nav-menu {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .menu-item-group {
+      display: flex;
+      align-items: center;
+      background-color: #29292e;
+      border-radius: 8px;
+      overflow: hidden;
+      border-left: 4px solid transparent;
+      transition: background-color 0.2s, opacity 0.2s;
+      user-select: none;
+    }
+    .menu-item-group.draggable {
+      cursor: grab;
+    }
+    .menu-item-group.draggable:active {
+      cursor: grabbing;
+    }
+    .menu-item-group.dragging {
+      opacity: 0.4;
+    }
+    .menu-item-group.drag-over {
+      border: 2px dashed #8257e5;
+    }
+    .menu-item-group.active {
+      background-color: #323238;
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+    }
+    .drag-handle {
+      padding: 8px 0 8px 10px;
+      color: var(--text-muted);
+      font-size: 1rem;
+      cursor: grab;
+    }
+    .menu-btn {
+      background: none;
+      color: var(--text-main);
+      border: none;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-action {
+      background-color: #8257e5;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-action:hover {
+      background-color: #996dff;
+    }
+    .btn-special {
+      background-color: #e5a00d;
+      color: #fff;
+    }
+    .btn-special:hover {
+      background-color: #ffb826;
+    }
+    /* Dashboard Resumo Preenchido por Cor */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .dash-card {
+      padding: 18px;
+      border-radius: var(--border-radius);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      cursor: grab;
+      user-select: none;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .dash-card:active {
+      cursor: grabbing;
+    }
+    .dash-card.dragging {
+      opacity: 0.4;
+      transform: scale(0.98);
+    }
+    .dash-card.drag-over {
+      outline: 2px dashed #ffffff;
+    }
+    .dash-card span {
+      font-size: 0.85rem;
+      opacity: 0.9;
+    }
+    .dash-card h2 {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .dash-actions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dash-drag-icon {
+      font-size: 1.1rem;
+      opacity: 0.7;
+      cursor: grab;
+    }
+    .btn-delete-menu {
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+    .btn-delete-menu:hover {
+      background: rgba(255, 0, 0, 0.7);
+    }
+    /* Layout Principal */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+    }
+    @media (max-width: 850px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+    /* Calendário */
+    .calendar-container {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: var(--border-radius);
+    }
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .calendar-header button {
+      background: #29292e;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 6px 14px;
+      border-radius: 6px;
+    }
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-weight: bold;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .day {
+      min-height: 75px;
+      background-color: #29292e;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      position: relative;
+    }
+    .day:hover {
+      background-color: #323238;
+    }
+    .day.empty {
+      background-color: transparent;
+      cursor: default;
+    }
+    .day.selected {
+      border: 2px solid #fff;
+    }
+    /* Dia Especial com Alerta */
+    .day.special-day {
+      border: 2px dashed #e5a00d;
+      background-color: #2e2a1f;
+    }
+    .special-badge {
+      font-size: 0.65rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+      color: #fff;
+      font-weight: bold;
+      margin-top: 2px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90%;
+    }
+    /* Alerta Vermelho de Pendência */
+    .day.has-alert {
+      border: 2px solid var(--alert-color);
+      box-shadow: 0 0 8px rgba(247, 90, 104, 0.4);
+    }
+    .alert-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background-color: var(--alert-color);
+      color: white;
+      font-size: 0.65rem;
+      font-weight: bold;
+      padding: 2px 5px;
+      border-radius: 50%;
+      animation: blink 1.5s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .event-dots {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    /* Barra Lateral */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .form-container, .events-list-container {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: var(--border-radius);
+    }
+    .form-container h3, .events-list-container h3 {
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    input, select, textarea, button[type="submit"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #323238;
+      background-color: #121214;
+      color: var(--text-main);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    button[type="submit"] {
+      background-color: #00875f;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    button[type="submit"]:hover {
+      background-color: #00b37e;
+    }
+    .special-banner {
+      background-color: #3b3117;
+      border: 1px solid #e5a00d;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .special-banner h4 {
+      color: #e5a00d;
+      font-size: 0.9rem;
+    }
+    .event-item {
+      background-color: #29292e;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-left: 5px solid transparent;
+      gap: 10px;
+    }
+    .event-info h4 { font-size: 0.95rem; }
+    .event-info .event-time { font-size: 0.8rem; color: #00b37e; font-weight: bold; margin-bottom: 3px; }
+    .event-info p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+    .event-info .event-cat { font-size: 0.75rem; text-transform: uppercase; font-weight: bold; opacity: 0.8; }
+    .btn-delete {
+      background: none;
+      border: none;
+      color: #f75a68;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+    /* Modais */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .color-picker-wrapper input[type="color"] {
+      width: 50px;
+      height: 40px;
+      padding: 0;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Cabeçalho -->
+    <header>
+      <h1>📅 Agenda Eletrônica</h1>
+      <nav class="nav-menu" id="nav-menu"></nav>
+      <div class="header-actions">
+        <button class="btn-action btn-special" id="open-special-modal-btn">⭐ Dia Especial</button>
+        <button class="btn-action" id="open-modal-btn">+ Criar Menu</button>
+      </div>
+    </header>
+    <!-- Resumo dos Menus/Categorias Preenchidos pela Cor -->
+    <section class="dashboard" id="dashboard"></section>
+    <!-- Conteúdo Principal -->
+    <div class="main-content">
+      <!-- Calendário -->
+      <section class="calendar-container">
+        <div class="calendar-header">
+          <button id="prev-month">&lt;</button>
+          <h2 id="month-year-title">Outubro 2026</h2>
+          <button id="next-month">&gt;</button>
+        </div>
+        <div class="weekdays">
+          <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+        </div>
+        <div class="days-grid" id="days-grid"></div>
+      </section>
+      <!-- Barra Lateral -->
+      <aside class="sidebar">
+        <!-- Form de Novo Compromisso -->
+        <div class="form-container">
+          <h3>+ Novo Compromisso</h3>
+          <form id="event-form">
+            <input type="text" id="title" placeholder="Título do compromisso *" required />
+            <div style="display: flex; gap: 10px;">
+              <input type="date" id="date" required style="flex: 2;" />
+              <input type="time" id="time" title="Horário (opcional)" style="flex: 1;" />
+            </div>
+            <select id="category" required></select>
+            <textarea id="description" placeholder="Descrição ou observações (opcional)"></textarea>
+            <button type="submit">Salvar Compromisso</button>
+          </form>
+        </div>
+        <!-- Lista do Dia -->
+        <div class="events-list-container">
+          <h3 id="selected-date-title">Compromissos</h3>
+          <div id="special-day-info"></div>
+          <div id="events-list"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+  <!-- Modal Criar Menu -->
+  <div class="modal" id="menu-modal">
+    <div class="modal-content">
+      <h3>Novo Menu / Categoria</h3>
+      <input type="text" id="new-menu-name" placeholder="Nome do menu" />
+      <div class="color-picker-wrapper">
+        <label for="new-menu-color">Escolha a cor:</label>
+        <input type="color" id="new-menu-color" value="#0088cc" />
+      </div>
+      <div class="modal-actions">
+        <button id="save-menu-btn" style="background-color: #00875f; font-weight: bold;">Salvar</button>
+        <button id="close-modal-btn" style="background-color: #323238;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Cadastrar Dia Especial -->
+  <div class="modal" id="special-modal">
+    <div class="modal-content">
+      <h3>⭐ Configurar Dia Especial</h3>
+      <input type="text" id="special-title" placeholder="Ex: Aniversário, Feriado..." required />
+      <input type="date" id="special-date" required />
+      <div class="color-picker-wrapper">
+        <label for="special-color">Cor de Destaque:</label>
+        <input type="color" id="special-color" value="#e5a00d" />
+      </div>
+      <div class="modal-actions">
+        <button id="save-special-btn" style="background-color: #e5a00d; font-weight: bold; color: #fff;">Salvar Alerta</button>
+        <button id="close-special-modal-btn" style="background-color: #323238;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <!-- Script Firebase Otimizado -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+    import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyAVmwnpSmKyIrI2XSauxd0VXd2L9Lj2n9Q",
+      authDomain: "agendakl.firebaseapp.com",
+      projectId: "agendakl",
+      storageBucket: "agendakl.firebasestorage.app",
+      messagingSenderId: "822931944523",
+      appId: "1:822931944523:web:77d90afade841742be09ce",
+      measurementId: "G-TNLS1D0XH9"
+    };
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+    let categories = [];
+    let specialDays = [];
+    let events = [];
+    let currentDate = new Date();
+    let currentFilter = 'all';
+    let selectedDateStr = new Date().toISOString().split('T')[0];
+    let draggedCategoryIndex = null;
+    const monthYearTitle = document.getElementById('month-year-title');
+    const daysGrid = document.getElementById('days-grid');
+    const prevBtn = document.getElementById('prev-month');
+    const nextBtn = document.getElementById('next-month');
+    const eventForm = document.getElementById('event-form');
+    const eventsList = document.getElementById('events-list');
+    const specialDayInfo = document.getElementById('special-day-info');
+    const selectedDateTitle = document.getElementById('selected-date-title');
+    const navMenu = document.getElementById('nav-menu');
+    const categorySelect = document.getElementById('category');
+    const dashboard = document.getElementById('dashboard');
+    const menuModal = document.getElementById('menu-modal');
+    const openModalBtn = document.getElementById('open-modal-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const saveMenuBtn = document.getElementById('save-menu-btn');
+    const specialModal = document.getElementById('special-modal');
+    const openSpecialModalBtn = document.getElementById('open-special-modal-btn');
+    const closeSpecialModalBtn = document.getElementById('close-special-modal-btn');
+    const saveSpecialBtn = document.getElementById('save-special-btn');
+    const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    function init() {
+      document.getElementById('date').value = selectedDateStr;
+      document.getElementById('special-date').value = selectedDateStr;
+      
+      setupRealtimeListeners();
+      setupEventListeners();
+    }
+    function updateUI() {
+      renderMenu();
+      renderCalendar();
+      renderEvents();
+      updateDashboard();
+    }
+    function setupRealtimeListeners() {
+      // Listener de Categorias
+      onSnapshot(collection(db, "categories"), async (snapshot) => {
+        categories = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        if (categories.length === 0) {
+          const defaults = [
+            { name: "Pessoal", color: "#00875f", order: 0 },
+            { name: "Trabalho", color: "#0088cc", order: 1 },
+            { name: "Ministério", color: "#8257e5", order: 2 }
+          ];
+          for (let cat of defaults) {
+            await addDoc(collection(db, "categories"), cat);
+          }
+          return;
+        }
+        categories.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        updateUI();
+      });
+      // Listener de Eventos
+      onSnapshot(collection(db, "events"), (snapshot) => {
+        events = snapshot.docs.map(d => ({ firebaseId: d.id, ...d.data() }));
+        updateUI();
+      });
+      // Listener de Dias Especiais
+      onSnapshot(collection(db, "specialDays"), (snapshot) => {
+        specialDays = snapshot.docs.map(d => ({ firebaseId: d.id, ...d.data() }));
+        updateUI();
+      });
+    }
+    async function reorderCategories(fromIndex, toIndex) {
+      if (fromIndex === null || fromIndex === toIndex) return;
+      
+      // 1. Move os itens localmente
+      const itemMover = categories.splice(fromIndex, 1)[0];
+      categories.splice(toIndex, 0, itemMover);
+      draggedCategoryIndex = null;
+      // 2. Faz uma cópia "congelada" das IDs na nova ordem.
+      const novaOrdemIds = categories.map(cat => cat.id);
+      // 3. Atualiza imediatamente na tela para fluidez do arraste
+      updateUI();
+      // 4. Usa batch para atualizar a ordem no Firebase atomicamente
+      try {
+        const batch = writeBatch(db);
+        novaOrdemIds.forEach((id, index) => {
+          batch.update(doc(db, "categories", id), { order: index });
+        });
+        await batch.commit();
+      } catch (e) {
+        console.error("Erro ao atualizar ordem no Firebase:", e);
+      }
+    }
+    function renderMenu() {
+      navMenu.innerHTML = '';
+      const allGroup = document.createElement('div');
+      allGroup.className = `menu-item-group ${currentFilter === 'all' ? 'active' : ''}`;
+      const allBtn = document.createElement('button');
+      allBtn.className = 'menu-btn';
+      allBtn.innerText = 'Todos';
+      allBtn.addEventListener('click', () => filterCategory('all', allGroup));
+      allGroup.appendChild(allBtn);
+      navMenu.appendChild(allGroup);
+      categorySelect.innerHTML = '';
+      categories.forEach((cat, index) => {
+        const group = document.createElement('div');
+        group.className = `menu-item-group draggable ${currentFilter === cat.id ? 'active' : ''}`;
+        group.style.borderLeftColor = cat.color;
+        group.setAttribute('draggable', 'true');
+        const dragHandle = document.createElement('span');
+        dragHandle.className = 'drag-handle';
+        dragHandle.innerHTML = '⠿';
+        const btn = document.createElement('button');
+        btn.className = 'menu-btn';
+        btn.innerText = cat.name;
+        btn.addEventListener('click', () => filterCategory(cat.id, group));
+        group.appendChild(dragHandle);
+        group.appendChild(btn);
+        group.addEventListener('dragstart', () => {
+          draggedCategoryIndex = index;
+          group.classList.add('dragging');
+        });
+        group.addEventListener('dragend', () => group.classList.remove('dragging'));
+        group.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          group.classList.add('drag-over');
+        });
+        group.addEventListener('dragleave', () => group.classList.remove('drag-over'));
+        group.addEventListener('drop', (e) => {
+          e.preventDefault();
+          group.classList.remove('drag-over');
+          if (draggedCategoryIndex !== null && draggedCategoryIndex !== index) {
+            reorderCategories(draggedCategoryIndex, index);
+          }
+        });
+        navMenu.appendChild(group);
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.innerText = cat.name;
+        categorySelect.appendChild(option);
+      });
+    }
+    function filterCategory(catId, groupElement) {
+      document.querySelectorAll('.menu-item-group').forEach(b => b.classList.remove('active'));
+      groupElement.classList.add('active');
+      currentFilter = catId;
+      updateUI();
+    }
+    openModalBtn.addEventListener('click', () => menuModal.style.display = 'flex');
+    closeModalBtn.addEventListener('click', () => menuModal.style.display = 'none');
+    openSpecialModalBtn.addEventListener('click', () => specialModal.style.display = 'flex');
+    closeSpecialModalBtn.addEventListener('click', () => specialModal.style.display = 'none');
+    saveMenuBtn.addEventListener('click', async () => {
+      const name = document.getElementById('new-menu-name').value.trim();
+      const color = document.getElementById('new-menu-color').value;
+      if (!name) return alert('Por favor, digite o nome do menu.');
+      try {
+        await addDoc(collection(db, "categories"), { 
+          name, 
+          color, 
+          order: categories.length 
+        });
+      } catch (e) {
+        console.error("Erro ao salvar menu:", e);
+      }
+      document.getElementById('new-menu-name').value = '';
+      menuModal.style.display = 'none';
+    });
+    saveSpecialBtn.addEventListener('click', async () => {
+      const title = document.getElementById('special-title').value.trim();
+      const date = document.getElementById('special-date').value;
+      const color = document.getElementById('special-color').value;
+      if (!title || !date) return alert('Preencha o título e a data do dia especial.');
+      try {
+        await addDoc(collection(db, "specialDays"), { title, date, color });
+      } catch (e) {
+        console.error("Erro ao salvar dia especial:", e);
+      }
+      document.getElementById('special-title').value = '';
+      specialModal.style.display = 'none';
+    });
+    window.deleteSpecialDay = async function(firebaseId) {
+      if (!firebaseId) return;
+      try {
+        await deleteDoc(doc(db, "specialDays", firebaseId));
+      } catch (e) {
+        console.error("Erro ao deletar dia especial:", e);
+      }
+    };
+    window.deleteMenu = async function(catId, event) {
+      if (event) event.stopPropagation();
+      if (categories.length <= 1) return alert('Você precisa manter pelo menos um menu.');
+      if (!confirm('Deseja excluir este menu e todos os compromissos dele?')) return;
+      try {
+        await deleteDoc(doc(db, "categories", catId));
+        
+        const relatedEvents = events.filter(e => e.category === catId);
+        for (let ev of relatedEvents) {
+          if (ev.firebaseId) {
+            await deleteDoc(doc(db, "events", ev.firebaseId));
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao deletar menu:", e);
+      }
+      if (currentFilter === catId) currentFilter = 'all';
+    };
+    window.deleteEvent = async function(firebaseId, event) {
+      if (event) event.stopPropagation();
+      if (!firebaseId) return;
+      try {
+        await deleteDoc(doc(db, "events", firebaseId));
+      } catch (e) {
+        console.error("Erro ao deletar evento:", e);
+      }
+    };
+    function renderCalendar() {
+      daysGrid.innerHTML = '';
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      monthYearTitle.innerText = `${monthNames[month]} ${year}`;
+      const firstDayIndex = new Date(year, month, 1).getDay();
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const todayStr = new Date().toISOString().split('T')[0];
+      for (let x = 0; x < firstDayIndex; x++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.classList.add('day', 'empty');
+        daysGrid.appendChild(emptyDiv);
+      }
+      for (let day = 1; day <= lastDay; day++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.classList.add('day');
+        
+        const formattedDay = day < 10 ? `0${day}` : day;
+        const formattedMonth = (month + 1) < 10 ? `0${month + 1}` : month + 1;
+        const dateStr = `${year}-${formattedMonth}-${formattedDay}`;
+        dayDiv.innerHTML = `<span>${day}</span>`;
+        if (dateStr === selectedDateStr) dayDiv.classList.add('selected');
+        const special = specialDays.find(s => s.date === dateStr);
+        if (special) {
+          dayDiv.classList.add('special-day');
+          const spBadge = document.createElement('div');
+          spBadge.classList.add('special-badge');
+          spBadge.style.backgroundColor = special.color;
+          spBadge.innerText = `⭐ ${special.title}`;
+          dayDiv.appendChild(spBadge);
+        }
+        const dayEvents = events.filter(e => e.date === dateStr && (currentFilter === 'all' || e.category === currentFilter));
+        if (dateStr < todayStr && dayEvents.length > 0) {
+          dayDiv.classList.add('has-alert');
+          const alertBadge = document.createElement('div');
+          alertBadge.classList.add('alert-badge');
+          alertBadge.innerText = '!';
+          dayDiv.appendChild(alertBadge);
+        }
+        if (dayEvents.length > 0) {
+          const dotsContainer = document.createElement('div');
+          dotsContainer.classList.add('event-dots');
+          
+          dayEvents.forEach(e => {
+            const cat = categories.find(c => c.id === e.category);
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            dot.style.backgroundColor = cat ? cat.color : '#ffffff';
+            dotsContainer.appendChild(dot);
+          });
+          dayDiv.appendChild(dotsContainer);
+        }
+        dayDiv.addEventListener('click', () => {
+          selectedDateStr = dateStr;
+          document.getElementById('date').value = dateStr;
+          document.getElementById('special-date').value = dateStr;
+          updateUI();
+        });
+        daysGrid.appendChild(dayDiv);
+      }
+    }
+    function renderEvents() {
+      eventsList.innerHTML = '';
+      specialDayInfo.innerHTML = '';
+      const [year, month, day] = selectedDateStr.split('-');
+      selectedDateTitle.innerText = `Compromissos (${day}/${month})`;
+      const special = specialDays.find(s => s.date === selectedDateStr);
+      if (special) {
+        const banner = document.createElement('div');
+        banner.className = 'special-banner';
+        banner.style.borderColor = special.color;
+        banner.innerHTML = `
+          <div>
+            <h4 style="color: ${special.color}">⭐ ${special.title}</h4>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Dia Especial Cadastrado</span>
+          </div>
+          <button class="btn-delete" onclick="deleteSpecialDay('${special.firebaseId}')">&times;</button>
+        `;
+        specialDayInfo.appendChild(banner);
+      }
+      const filteredEvents = events.filter(e => e.date === selectedDateStr && (currentFilter === 'all' || e.category === currentFilter));
+      if (filteredEvents.length === 0) {
+        eventsList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Nenhum compromisso agendado.</p>';
+        return;
+      }
+      filteredEvents.forEach(e => {
+        const cat = categories.find(c => c.id === e.category) || { name: 'Geral', color: '#ffffff' };
+        const item = document.createElement('div');
+        item.classList.add('event-item');
+        item.style.borderLeftColor = cat.color;
+        item.innerHTML = `
+          <div class="event-info">
+            ${e.time ? `<div class="event-time">⏰ ${e.time}</div>` : ''}
+            <h4>${e.title}</h4>
+            <span class="event-cat" style="color: ${cat.color}">${cat.name}</span>
+            ${e.description ? `<p>${e.description}</p>` : ''}
+          </div>
+          <button class="btn-delete" onclick="deleteEvent('${e.firebaseId}', event)">&times;</button>
+        `;
+        eventsList.appendChild(item);
+      });
+    }
+    function updateDashboard() {
+      dashboard.innerHTML = '';
+      categories.forEach((cat, index) => {
+        const count = events.filter(e => e.category === cat.id).length;
+        const card = document.createElement('div');
+        card.classList.add('dash-card');
+        card.style.backgroundColor = cat.color;
+        card.setAttribute('draggable', 'true');
+        card.innerHTML = `
+          <div class="dash-actions">
+            <span class="dash-drag-icon">⠿</span>
+            <button class="btn-delete-menu" onclick="deleteMenu('${cat.id}', event)">&times;</button>
+          </div>
+          <span>Compromissos</span>
+          <h2>${cat.name}</h2>
+          <span>${count} Evento(s)</span>
+        `;
+        card.addEventListener('dragstart', () => {
+          draggedCategoryIndex = index;
+          card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          card.classList.add('drag-over');
+        });
+        card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+        card.addEventListener('drop', (e) => {
+          e.preventDefault();
+          card.classList.remove('drag-over');
+          if (draggedCategoryIndex !== null && draggedCategoryIndex !== index) {
+            reorderCategories(draggedCategoryIndex, index);
+          }
+        });
+        dashboard.appendChild(card);
+      });
+    }
+    eventForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+      const category = document.getElementById('category').value;
+      const description = document.getElementById('description').value;
+      try {
+        await addDoc(collection(db, "events"), { title, date, time, category, description });
+      } catch (err) {
+        console.error("Erro ao salvar evento:", err);
+      }
+      selectedDateStr = date;
+      document.getElementById('title').value = '';
+      document.getElementById('time').value = '';
+      document.getElementById('description').value = '';
+    });
+    function setupEventListeners() {
+      prevBtn.addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        updateUI();
+      });
+      nextBtn.addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        updateUI();
+      });
+    }
+    init();
+  </script>
+</body>
+</html>
