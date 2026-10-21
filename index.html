@@ -12,6 +12,7 @@
       --text-muted: #a8a8b3;
       --border-radius: 12px;
       --alert-color: #f75a68;
+      --success-color: #00b37e;
     }
     * {
       box-sizing: border-box;
@@ -371,17 +372,55 @@
       align-items: flex-start;
       border-left: 5px solid transparent;
       gap: 10px;
+      transition: opacity 0.2s, background-color 0.2s;
+    }
+    .event-item.completed {
+      opacity: 0.6;
+      background-color: #1e1e22;
+    }
+    .event-item.completed h4 {
+      text-decoration: line-through;
+      color: var(--text-muted);
     }
     .event-info h4 { font-size: 0.95rem; }
     .event-info .event-time { font-size: 0.8rem; color: #00b37e; font-weight: bold; margin-bottom: 3px; }
     .event-info p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
     .event-info .event-cat { font-size: 0.75rem; text-transform: uppercase; font-weight: bold; opacity: 0.8; }
+    .event-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-confirm {
+      background: #202024;
+      border: 1px solid #323238;
+      color: var(--text-muted);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .btn-confirm:hover {
+      border-color: var(--success-color);
+      color: var(--success-color);
+    }
+    .btn-confirm.completed {
+      background-color: rgba(0, 179, 126, 0.15);
+      border-color: var(--success-color);
+      color: var(--success-color);
+    }
     .btn-delete {
       background: none;
       border: none;
       color: #f75a68;
       cursor: pointer;
       font-size: 1.2rem;
+      padding: 0 4px;
     }
     /* Modais */
     .modal {
@@ -735,6 +774,17 @@
         console.error("Erro ao deletar evento:", e);
       }
     };
+    window.toggleCompleteEvent = async function(firebaseId, currentStatus, event) {
+      if (event) event.stopPropagation();
+      if (!firebaseId) return;
+      try {
+        await updateDoc(doc(db, "events", firebaseId), {
+          completed: !currentStatus
+        });
+      } catch (e) {
+        console.error("Erro ao atualizar status do evento:", e);
+      }
+    };
     function renderCalendar() {
       daysGrid.innerHTML = '';
       const year = currentDate.getFullYear();
@@ -767,7 +817,9 @@
           dayDiv.appendChild(spBadge);
         }
         const dayEvents = events.filter(e => e.date === dateStr && (currentFilter === 'all' || e.category === currentFilter));
-        if (dateStr < todayStr && dayEvents.length > 0) {
+        const pendingEvents = dayEvents.filter(e => !e.completed);
+        
+        if (dateStr < todayStr && pendingEvents.length > 0) {
           dayDiv.classList.add('has-alert');
           const alertBadge = document.createElement('div');
           alertBadge.classList.add('alert-badge');
@@ -783,6 +835,9 @@
             const dot = document.createElement('div');
             dot.classList.add('dot');
             dot.style.backgroundColor = cat ? cat.color : '#ffffff';
+            if (e.completed) {
+              dot.style.opacity = '0.3';
+            }
             dotsContainer.appendChild(dot);
           });
           dayDiv.appendChild(dotsContainer);
@@ -822,8 +877,10 @@
       }
       filteredEvents.forEach(e => {
         const cat = categories.find(c => c.id === e.category) || { name: 'Geral', color: '#ffffff' };
+        const isCompleted = !!e.completed;
         const item = document.createElement('div');
         item.classList.add('event-item');
+        if (isCompleted) item.classList.add('completed');
         item.style.borderLeftColor = cat.color;
         item.innerHTML = `
           <div class="event-info">
@@ -832,7 +889,12 @@
             <span class="event-cat" style="color: ${cat.color}">${cat.name}</span>
             ${e.description ? `<p>${e.description}</p>` : ''}
           </div>
-          <button class="btn-delete" onclick="deleteEvent('${e.firebaseId}', event)">&times;</button>
+          <div class="event-actions">
+            <button class="btn-confirm ${isCompleted ? 'completed' : ''}" onclick="toggleCompleteEvent('${e.firebaseId}', ${isCompleted}, event)" title="${isCompleted ? 'Marcar como pendente' : 'Confirmar/Concluir compromisso'}">
+              ${isCompleted ? '✓ Concluído' : '✓ Concluir'}
+            </button>
+            <button class="btn-delete" onclick="deleteEvent('${e.firebaseId}', event)">&times;</button>
+          </div>
         `;
         eventsList.appendChild(item);
       });
@@ -882,7 +944,14 @@
       const category = document.getElementById('category').value;
       const description = document.getElementById('description').value;
       try {
-        await addDoc(collection(db, "events"), { title, date, time, category, description });
+        await addDoc(collection(db, "events"), { 
+          title, 
+          date, 
+          time, 
+          category, 
+          description,
+          completed: false 
+        });
       } catch (err) {
         console.error("Erro ao salvar evento:", err);
       }
